@@ -102,6 +102,15 @@ def eval_libero(args: Args) -> None:
 
             logging.info(f"Starting episode {task_episodes+1}...")
             while t < max_steps + args.num_steps_wait:
+                if t==0:
+                    initial_element = {
+                            "observation/image": np.random.randint(0, 256, (224, 224, 3), dtype=np.uint8),
+                            "observation/wrist_image": np.random.randint(0, 256, (224, 224, 3), dtype=np.uint8),
+                            "observation/state": np.random.randn(8).astype(np.float32)
+                            "prompt": “Intial step.The model needs reset ”,
+                            "reset":True,
+                        }
+
                 try:
                     # IMPORTANT: Do nothing for the first few timesteps because the simulator drops objects
                     # and we need to wait for them to fall
@@ -138,6 +147,7 @@ def eval_libero(args: Args) -> None:
                                 )
                             ),
                             "prompt": str(task_description),
+                            "reset":False,
                         }
 
                         # Query model to get action
