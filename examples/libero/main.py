@@ -107,9 +107,12 @@ def eval_libero(args: Args) -> None:
                             "observation/image": np.random.randint(0, 256, (224, 224, 3), dtype=np.uint8),
                             "observation/wrist_image": np.random.randint(0, 256, (224, 224, 3), dtype=np.uint8),
                             "observation/state": np.random.randn(8).astype(np.float32)
-                            "prompt": “Intial step.The model needs reset ”,
+                            "prompt": "Intial step.The model needs reset ",
                             "reset":True,
                         }
+                    client.infer(initial_element)
+                    t += 1
+                    continue
 
                 try:
                     # IMPORTANT: Do nothing for the first few timesteps because the simulator drops objects
