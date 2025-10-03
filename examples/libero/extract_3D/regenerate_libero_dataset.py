@@ -100,7 +100,8 @@ def main(args):
 
     # Prepare JSON file to record success/false and initial states per episode
     metainfo_json_dict = {}
-    metainfo_json_out_path = f"./experiments/robot/libero/{args.libero_task_suite}_metainfo.json"
+    # metainfo_json_out_path = f"./experiments/robot/libero/{args.libero_task_suite}_metainfo.json"
+    metainfo_json_out_path = os.path.join(args.libero_target_dir, f"{args.libero_task_suite}_metainfo.json")
     with open(metainfo_json_out_path, "w") as f:
         # Just test that we can write to this file (we overwrite it later)
         json.dump(metainfo_json_dict, f)
@@ -121,7 +122,7 @@ def main(args):
     'y': (-0.8, 0.8),
     'z': (0.35, 1.5)
     }
-    reconstructor = PointMapReconstructor(max_points=30000, spatial_bounds=spatial_bounds)
+    reconstructor = PointMapReconstructor(max_points=30000, spatial_bounds=None)
 
     for task_id in tqdm.tqdm(range(num_tasks_in_suite)):
         # Get task in suite
@@ -232,11 +233,10 @@ def main(args):
                 ep_data_grp.create_dataset("robot_states", data=np.stack(robot_states, axis=0))
                 ep_data_grp.create_dataset("rewards", data=rewards)
                 ep_data_grp.create_dataset("dones", data=dones)
-
+                
+                reconstructor.save_frames_as_json(args.libero_target_dir, num_success)    #按照全局id保存点云序列
+                
                 num_success += 1
-                # === 新增：保存过滤后的点云序列 ===
-                reconstructor.save_frames_as_json(args.libero_target_dir, i)
-                # =====================================
 
             num_replays += 1
 
