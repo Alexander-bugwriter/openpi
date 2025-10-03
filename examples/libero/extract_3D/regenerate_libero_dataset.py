@@ -35,6 +35,7 @@ import robosuite.utils.transform_utils as T
 import tqdm
 from libero.libero import benchmark, get_libero_path
 from libero.libero.envs import OffScreenRenderEnv
+from pointmap_reconstructor import PointMapReconstructor
 
 
 def get_libero_dummy_action(model_family: str):
