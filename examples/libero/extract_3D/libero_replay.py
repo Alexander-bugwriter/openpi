@@ -16,6 +16,7 @@ from PIL import Image
 # from Voxel_Reconstructor import SimpleVoxelReconstructor
 from pointmap_reconstructor import PointMapReconstructor
 import robosuite.macros as macros
+import json
 print(f"IMAGE_CONVENTION: {macros.IMAGE_CONVENTION}")
 
 LIBERO_ENV_RESOLUTION = 256
@@ -79,12 +80,70 @@ def get_libero_task_info(dataset_task_idx):
         raise ValueError(f'Unknown task_index: {dataset_task_idx}')
 
 
+# 🔥 在文件开头添加可视化函数
+def visualize_segmentation(seg: np.ndarray, env):
+    """将分割图转换为彩色可视化图像"""
+    if len(seg.shape) == 3:
+        seg = seg.squeeze()
+
+    H, W = seg.shape
+    vis_img = np.zeros((H, W, 3), dtype=np.uint8)
+
+    # 为每个ID分配颜色
+    unique_ids = np.unique(seg)
+    for uid in unique_ids:
+        mask = (seg == uid)
+        # 使用黄金角分布生成颜色
+        hue = (uid * 137.508) % 360
+        r, g, b = hsl_to_rgb(hue / 360, 0.8, 0.6)
+        vis_img[mask] = [int(r * 255), int(g * 255), int(b * 255)]
+
+    # 添加文字标注显示有哪些物体
+    if len(unique_ids) <= 10:  # 只在物体不太多时标注
+        from PIL import Image, ImageDraw, ImageFont
+        pil_img = Image.fromarray(vis_img)
+        draw = ImageDraw.Draw(pil_img)
+
+        y_offset = 5
+        for uid in sorted(unique_ids):
+            if 0 <= uid < env.sim.model.ngeom:
+                name = env.sim.model.geom_id2name(uid)
+                # 简短名称
+                short_name = name.split('_')[0] if '_' in name else name
+                text = f"ID{uid}:{short_name}"
+                draw.text((5, y_offset), text, fill=(255, 255, 255))
+                y_offset += 15
+
+        vis_img = np.array(pil_img)
+
+    return vis_img
+def hsl_to_rgb(h, s, l):
+    """HSL转RGB"""
+    if s == 0:
+        r = g = b = l
+    else:
+        def hue2rgb(p, q, t):
+            if t < 0: t += 1
+            if t > 1: t -= 1
+            if t < 1 / 6: return p + (q - p) * 6 * t
+            if t < 1 / 2: return q
+            if t < 2 / 3: return p + (q - p) * (2 / 3 - t) * 6
+            return p
+
+        q = l * (1 + s) if l < 0.5 else l + s - l * s
+        p = 2 * l - q
+        r = hue2rgb(p, q, h + 1 / 3)
+        g = hue2rgb(p, q, h)
+        b = hue2rgb(p, q, h - 1 / 3)
+
+    return r, g, b
+
 @dataclasses.dataclass
 class ReplayArgs:
     dataset_path: str = "/home/lyh/PycharmProjects/openpi/examples/libero/lerobot_libero_dataset"  # 硬编码数据集路径
     video_out_path: str = "data/libero_replay_videos"  # 输出视频路径
     num_steps_wait: int = 10  # 等待物体稳定的步数
-    seed: int = 7  # 随机种子
+    seed: int = 0  # 随机种子
     max_episodes: int = 10  # 最大回放episodes数量
     debug: bool = True  # 调试模式
     save_comparison_video: bool = True  # 是否保存对比视频（原始vs重放）
@@ -348,6 +407,7 @@ def replay_libero_episodes(args: ReplayArgs) -> None:
 
             # 回放动作序列
             replay_images = []
+            # seg_images = []  # 🔥 新增：收集分割图
             success = False
 
             logging.info("开始回放动作序列...")
@@ -375,6 +435,10 @@ def replay_libero_episodes(args: ReplayArgs) -> None:
                     img = np.clip(img * 255, 0, 255).astype(np.uint8)
 
                 replay_images.append(img)
+                # # 🔥 收集并可视化分割图
+                # seg = obs["agentview_segmentation_instance"].squeeze()
+                # seg_vis = visualize_segmentation(seg, env)
+                # seg_images.append(seg_vis)
                 # if step_idx < 5:  # 前5步打印调试信息
                 #     print(f"步骤 {step_idx}:")
                 #     trace_action_conversion(action)
@@ -407,6 +471,10 @@ def replay_libero_episodes(args: ReplayArgs) -> None:
                 if final_img.dtype != np.uint8:
                     final_img = np.clip(final_img * 255, 0, 255).astype(np.uint8)
                 replay_images.append(final_img)
+                # # 🔥 也保存最后的分割图
+                # seg = obs["agentview_segmentation_instance"].squeeze()
+                # seg_vis = visualize_segmentation(seg, env)
+                # seg_images.append(seg_vis)
 
             # 保存视频
             if replay_images:
@@ -424,6 +492,11 @@ def replay_libero_episodes(args: ReplayArgs) -> None:
                     fps=10,
                     codec='libx264'
                 )
+                # 🔥 保存分割图视频
+                # if seg_images:
+                #     seg_video_path = pathlib.Path(args.video_out_path) / f"ep_{episode_idx:03d}_segmentation.mp4"
+                #     logging.info(f"保存分割图视频: {seg_video_path}")
+                #     imageio.mimwrite(seg_video_path, seg_images, fps=10, codec='libx264')
 
                 # 保存原始视频用于对比
                 if args.save_comparison_video and original_images:
@@ -454,7 +527,8 @@ def replay_libero_episodes(args: ReplayArgs) -> None:
                         create_comparison_video(processed_original, replay_images, comparison_video_path)
 
                 logging.info(f"任务状态: {'成功' if success else '未完成'}")
-                reconstructor.save_frames_as_json(args.video_out_path, episode_idx)
+                reconstructor.save_frames_as_json(args.video_out_path, episode_idx,env)
+                
                 summary = reconstructor.get_summary()
                 print(f"重建摘要: {summary}")
             else:
@@ -533,6 +607,7 @@ def _get_libero_env(task, resolution, seed):
         "camera_widths": resolution,
         "camera_names": camera_names,
         "camera_depths": True,  # 全部启用深度
+        "camera_segmentations": "instance",  # 🔥 新增：启用instance分割
     }
     env = OffScreenRenderEnv(**env_args)
     env.seed(seed)
