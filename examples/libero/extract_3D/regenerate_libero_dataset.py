@@ -35,7 +35,6 @@ import robosuite.utils.transform_utils as T
 import tqdm
 from libero.libero import benchmark, get_libero_path
 from libero.libero.envs import OffScreenRenderEnv
-from pointmap_reconstructor import PointMapReconstructor
 
 
 def get_libero_dummy_action(model_family: str):
@@ -47,15 +46,7 @@ def get_libero_env(task, model_family, resolution=256):
     """Initializes and returns the LIBERO environment, along with the task description."""
     task_description = task.language
     task_bddl_file = os.path.join(get_libero_path("bddl_files"), task.problem_folder, task.bddl_file)
-    camera_names = ["agentview", "robot0_eye_in_hand", "sideview", "frontview"]
-    # env_args = {"bddl_file_name": task_bddl_file, "camera_heights": resolution, "camera_widths": resolution}
-    env_args = {
-        "bddl_file_name": task_bddl_file,
-        "camera_heights": resolution,
-        "camera_widths": resolution,
-        "camera_names": camera_names,
-        "camera_depths": True,   # ← 关键：启用深度
-    }
+    env_args = {"bddl_file_name": task_bddl_file, "camera_heights": resolution, "camera_widths": resolution}
     env = OffScreenRenderEnv(**env_args)
     env.seed(0)  # IMPORTANT: seed seems to affect object positions even when using fixed initial state
     return env, task_description
@@ -116,14 +107,6 @@ def main(args):
     num_success = 0
     num_noops = 0
 
-    #Setup 3D extraction
-    spatial_bounds = {
-    'x': (-0.8, 0.8),
-    'y': (-0.8, 0.8),
-    'z': (0.35, 1.5)
-    }
-    reconstructor = PointMapReconstructor(max_points=30000, spatial_bounds=None)
-
     for task_id in tqdm.tqdm(range(num_tasks_in_suite)):
         # Get task in suite
         task = task_suite.get_task(task_id)
@@ -149,8 +132,6 @@ def main(args):
             # Reset environment, set initial state, and wait a few steps for environment to settle
             env.reset()
             env.set_init_state(orig_states[0])
-            reconstructor.reset()
-            current_episode_frame_idx = 0  # 过滤后的帧计数器
             for _ in range(10):
                 obs, reward, done, info = env.step(get_libero_dummy_action("llava"))
 
@@ -187,11 +168,6 @@ def main(args):
 
                 # Record original action (from demo)
                 actions.append(action)
-                # === 新增：记录点云（仅非 noop） ===
-                timestamp = len(actions) / 20.0  # 20 Hz，伪时间戳
-                reconstructor.capture_frame(obs, env, timestamp, current_episode_frame_idx)
-                current_episode_frame_idx += 1
-                # =================================
 
                 # Record data returned by environment
                 if "robot0_gripper_qpos" in obs:
@@ -233,9 +209,7 @@ def main(args):
                 ep_data_grp.create_dataset("robot_states", data=np.stack(robot_states, axis=0))
                 ep_data_grp.create_dataset("rewards", data=rewards)
                 ep_data_grp.create_dataset("dones", data=dones)
-                
-                reconstructor.save_frames_as_json(args.libero_target_dir, num_success)    #按照全局id保存点云序列
-                
+
                 num_success += 1
 
             num_replays += 1
