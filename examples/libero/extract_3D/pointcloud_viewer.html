@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Point Cloud Viewer with Semantics</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: monospace;
+      background: #000;
+      color: #0f0;
+      display: flex;
+      height: 100vh;
+    }
+    #canvas-container {
+      flex: 1;
+      position: relative;
+    }
+    #side {
+      width: 280px;
+      background: #111;
+      padding: 12px;
+      overflow-y: auto;
+    }
+    #side h3 {
+      margin: 0 0 10px;
+      color: #0f0;
+    }
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.7);
+      padding: 8px;
+    }
+    #ctrl {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.8);
+      padding: 10px;
+      border-radius: 4px;
+    }
+    button {
+      background: #0f0;
+      color: #000;
+      border: none;
+      padding: 6px 12px;
+      cursor: pointer;
+      margin-right: 8px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    button:hover {
+      background: #0c0;
+    }
+    button.active {
+      background: #ff0;
+      color: #000;
+    }
+    input[type="range"] {
+      width: 300px;
+      vertical-align: middle;
+    }
+    .info-row {
+      margin: 4px 0;
+      font-size: 12px;
+    }
+    #objectList {
+      font-size: 11px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .object-item {
+      padding: 3px 0;
+      border-bottom: 1px solid #222;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .object-item .color-box {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin-right: 6px;
+      border: 1px solid #555;
+    }
+  </style>
+</head>
+<body>
+<div id="canvas-container">
+  <div id="info">加载中...</div>
+  <div id="ctrl">
+    <button id="playBtn">播放</button>
+    <button id="colorModeBtn">语义颜色</button>
+    <input type="range" id="timeSlider" min="0" max="100" value="0">
+    <span id="frameInfo">0 / 0</span>
+  </div>
+</div>
+
+<div id="side">
+  <h3>点云信息</h3>
+  <div id="statsPanel"></div>
+
+  <h3 style="margin-top: 16px">场景物体</h3>
+  <div id="objectList">未加载物体映射</div>
+
+  <h3 style="margin-top: 16px">控制</h3>
+  <div class="info-row">
+    <label>点大小: <input type="range" id="pointSize" min="0.001" max="0.01" step="0.001" value="0.003"></label>
+    <span id="pointSizeVal">0.003</span>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+const EP_ID = 0;  // 修改episode号
+const META_URL = `pointmeta_ep_${EP_ID}.json`;
+const FRAMES_URL = `pointframes_ep_${EP_ID}.json`;
+
+
+let meta, frames, geomMapping = {};
+let scene, camera, renderer, pointsObj;
+let playing = false, curFrame = 0;
+let useSemanticColor = false;  // 颜色模式切换
+
+
+/* 初始化场景 */
+async function loadJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${url} 未找到`);
+  return res.json();
+}
+
+function initScene() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x111111);
+
+  const aspect = (innerWidth - 280) / innerHeight;
+  camera = new THREE.PerspectiveCamera(60, aspect, 0.01, 100);
+  camera.position.set(1.5, 1.5, 1.5);
+  camera.lookAt(0, 0.8, 0);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(innerWidth - 280, innerHeight);
+  document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+  // 照明
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.0));
+
+  // 参考网格
+  const grid = new THREE.GridHelper(2, 20, 0x444444, 0x222222);
+  grid.position.y = 0;
+  scene.add(grid);
+
+  // 坐标轴
+  const axes = new THREE.AxesHelper(0.5);
+  scene.add(axes);
+
+  addMouseControl();
+}
+
+function addMouseControl() {
+  let mouseDown = false;
+  let lastX = 0, lastY = 0;
+  let theta = 0, phi = Math.PI / 4;
+  const radius = 2.5;
+
+  renderer.domElement.addEventListener('mousedown', e => {
+    mouseDown = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+
+  window.addEventListener('mouseup', () => mouseDown = false);
+
+  window.addEventListener('mousemove', e => {
+    if (!mouseDown) return;
+
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+
+    theta -= dx * 0.01;
+    phi = Math.max(0.1, Math.min(Math.PI - 0.1, phi + dy * 0.01));
+
+    camera.position.x = radius * Math.sin(phi) * Math.cos(theta);
+    camera.position.y = radius * Math.cos(phi) + 0.8;
+    camera.position.z = radius * Math.sin(phi) * Math.sin(theta);
+    camera.lookAt(0, 0.8, 0);
+  });
+
+  // 缩放
+  renderer.domElement.addEventListener('wheel', e => {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 1.1 : 0.9;
+    camera.position.multiplyScalar(factor);
+  });
+}
+
+/* 渲染点云 */
+let labelColors = {};
+function buildFrame(idx) {
+  const frame = frames[idx];
+
+  if (pointsObj) {
+    scene.remove(pointsObj);
+    pointsObj.geometry.dispose();
+    pointsObj.material.dispose();
+  }
+
+  // 坐标转换
+  const positions = new Float32Array(frame.points.length * 3);
+  for (let i = 0; i < frame.points.length; i++) {
+    const [mx, my, mz] = frame.points[i];
+    positions[i * 3 + 0] = mx;
+    positions[i * 3 + 1] = mz;
+    positions[i * 3 + 2] = my;
+  }
+
+  // 🔥 根据模式选择颜色数组
+  const colorSource = useSemanticColor ? frame.colors_seg : frame.colors_rgb;
+
+  const colors = new Float32Array(colorSource.length * 3);
+  for (let i = 0; i < colorSource.length; i++) {
+    colors[i * 3 + 0] = colorSource[i][0] / 255;
+    colors[i * 3 + 1] = colorSource[i][1] / 255;
+    colors[i * 3 + 2] = colorSource[i][2] / 255;
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  const pointSize = parseFloat(document.getElementById('pointSize').value);
+  const material = new THREE.PointsMaterial({
+    size: pointSize,
+    vertexColors: true,
+    sizeAttenuation: true
+  });
+
+  pointsObj = new THREE.Points(geometry, material);
+  scene.add(pointsObj);
+
+  document.getElementById('frameInfo').textContent = `${idx + 1} / ${frames.length}`;
+  updateStats(frame);
+}
+
+function updateStats(frame) {
+  const stats = document.getElementById('statsPanel');
+  stats.innerHTML = `
+    <div class="info-row">时间戳: ${frame.timestamp.toFixed(2)}s</div>
+    <div class="info-row">步骤: ${frame.step_idx}</div>
+    <div class="info-row">点数: ${frame.points.length.toLocaleString()}</div>
+    <div class="info-row">颜色模式: ${useSemanticColor ? '语义分割' : 'RGB原色'}</div>
+  `;
+
+  if (frame.labels && Object.keys(siteMapping).length > 0) {
+    const uniqueIds = [...new Set(frame.labels)];
+    const objectList = document.getElementById('objectList');
+
+    // 🔥 计算每个label的平均颜色（从对应的颜色数组）
+    const colorSource = useSemanticColor ? frame.colors_seg : frame.colors_rgb;
+    const labelColors = {};
+    for (let i = 0; i < frame.labels.length; i++) {
+      const label = frame.labels[i];
+      if (!labelColors[label]) {
+        labelColors[label] = { r: 0, g: 0, b: 0, count: 0 };
+      }
+      labelColors[label].r += colorSource[i][0];
+      labelColors[label].g += colorSource[i][1];
+      labelColors[label].b += colorSource[i][2];
+      labelColors[label].count += 1;
+    }
+
+    let html = `<div class="info-row" style="color: #0f0; margin-bottom: 8px;">
+      检测到 ${uniqueIds.length} 个物体
+    </div>`;
+
+    uniqueIds.sort((a, b) => {
+      const countA = frame.labels.filter(l => l === a).length;
+      const countB = frame.labels.filter(l => l === b).length;
+      return countB - countA;
+    });
+
+    uniqueIds.forEach(id => {
+      const name = siteMapping[id] || `Unknown(${id})`;
+      const count = frame.labels.filter(l => l === id).length;
+
+      // 🔥 使用该label的平均颜色
+      const c = labelColors[id];
+      const avgR = Math.floor(c.r / c.count);
+      const avgG = Math.floor(c.g / c.count);
+      const avgB = Math.floor(c.b / c.count);
+      const colorHex = `rgb(${avgR}, ${avgG}, ${avgB})`;
+
+      const isImportant = name.includes('plate') || name.includes('gripper') ||
+                          name.includes('mug');
+      const style = isImportant ? 'color: #ff0; font-weight: bold;' : 'color: #aaa;';
+
+      html += `
+        <div class="object-item">
+          <div>
+            <span class="color-box" style="background: ${colorHex}"></span>
+            <span style="${style}">${name}</span>
+          </div>
+          <span style="color: #666;">${count}点</span>
+        </div>
+      `;
+    });
+
+    objectList.innerHTML = html;
+  }
+}
+
+/* 播放控制 */
+function animate() {
+  requestAnimationFrame(animate);
+
+  if (playing) {
+    curFrame = (curFrame + 1) % frames.length;
+    buildFrame(curFrame);
+    document.getElementById('timeSlider').value = curFrame;
+  }
+
+  renderer.render(scene, camera);
+}
+
+/* 主入口 */
+(async () => {
+  try {
+    meta = await loadJson(META_URL);
+    frames = await loadJson(FRAMES_URL);
+
+    // 🔥 从metadata读取site映射
+    siteMapping = meta.site_mapping || {};
+    console.log('✓ 已加载物体映射:', Object.keys(siteMapping).length, '个site');
+
+    initScene();
+    buildFrame(0);
+
+    document.getElementById('info').textContent =
+      `Episode ${meta.episode_id} | ${frames.length} 帧 | ${meta.cameras.join(', ')}`;
+
+
+    // 时间轴控制
+    document.getElementById('timeSlider').max = frames.length - 1;
+    document.getElementById('timeSlider').addEventListener('input', e => {
+      curFrame = parseInt(e.target.value);
+      buildFrame(curFrame);
+    });
+
+    // 播放/暂停按钮
+    document.getElementById('playBtn').addEventListener('click', () => {
+      playing = !playing;
+      document.getElementById('playBtn').textContent = playing ? '暂停' : '播放';
+    });
+
+    // 颜色模式切换按钮
+    const colorModeBtn = document.getElementById('colorModeBtn');
+    colorModeBtn.addEventListener('click', () => {
+      useSemanticColor = !useSemanticColor;
+      colorModeBtn.textContent = useSemanticColor ? 'RGB颜色' : '语义颜色';
+      colorModeBtn.classList.toggle('active', useSemanticColor);
+      buildFrame(curFrame);
+    });
+
+    // 点大小控制
+    document.getElementById('pointSize').addEventListener('input', e => {
+      document.getElementById('pointSizeVal').textContent = e.target.value;
+      buildFrame(curFrame);
+    });
+
+    animate();
+  } catch (error) {
+    document.getElementById('info').textContent = `加载失败: ${error.message}`;
+    console.error(error);
+  }
+})();
+</script>
+</body>
+</html>

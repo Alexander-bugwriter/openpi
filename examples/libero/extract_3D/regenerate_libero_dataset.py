@@ -54,7 +54,9 @@ def get_libero_env(task, model_family, resolution=256):
         "camera_heights": resolution,
         "camera_widths": resolution,
         "camera_names": camera_names,
-        "camera_depths": True
+        "camera_depths": True,
+        "camera_segmentations": "instance",  # 🔥 新增：启用instance分割
+
     }
     env = OffScreenRenderEnv(**env_args)
     env.seed(0)  # IMPORTANT: seed seems to affect object positions even when using fixed initial state

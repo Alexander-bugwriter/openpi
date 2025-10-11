@@ -1,0 +1,4 @@
+把html文件和点云文件放在一个目录下
+用python -m http.server 8000 然后访问http://localhost:8000/pointcloud_viewer.html就能看点云可视化
+libero_h5需要在lerobot环境下运行 把h5df转化成lerobot格式
+regenerate脚本需要在libero环境下运行 过滤原始h5df数据并且生成3D点云数据

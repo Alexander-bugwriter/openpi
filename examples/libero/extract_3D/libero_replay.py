@@ -610,7 +610,7 @@ def _get_libero_env(task, resolution, seed):
         "camera_segmentations": "instance",  # 🔥 新增：启用instance分割
     }
     env = OffScreenRenderEnv(**env_args)
-    env.seed(seed)
+    env.seed(0)
     return env, task_description
 
 
