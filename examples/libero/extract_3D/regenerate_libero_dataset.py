@@ -35,6 +35,7 @@ import robosuite.utils.transform_utils as T
 import tqdm
 from libero.libero import benchmark, get_libero_path
 from libero.libero.envs import OffScreenRenderEnv
+from pointmap_reconstructor import PointMapReconstructor
 
 
 def get_libero_dummy_action(model_family: str):
@@ -46,7 +47,15 @@ def get_libero_env(task, model_family, resolution=256):
     """Initializes and returns the LIBERO environment, along with the task description."""
     task_description = task.language
     task_bddl_file = os.path.join(get_libero_path("bddl_files"), task.problem_folder, task.bddl_file)
-    env_args = {"bddl_file_name": task_bddl_file, "camera_heights": resolution, "camera_widths": resolution}
+    camera_names = ["agentview", "robot0_eye_in_hand", "sideview", "frontview"]
+    # env_args = {"bddl_file_name": task_bddl_file, "camera_heights": resolution, "camera_widths": resolution}
+    env_args = {
+        "bddl_file_name": task_bddl_file,
+        "camera_heights": resolution,
+        "camera_widths": resolution,
+        "camera_names": camera_names,
+        "camera_depths": True
+    }
     env = OffScreenRenderEnv(**env_args)
     env.seed(0)  # IMPORTANT: seed seems to affect object positions even when using fixed initial state
     return env, task_description
@@ -106,10 +115,17 @@ def main(args):
     num_replays = 0
     num_success = 0
     num_noops = 0
+    spatial_bounds = {
+        'x': (-0.8, 0.8),
+        'y': (-0.8, 0.8),
+        'z': (0.35, 1.5)
+    }
+    reconstructor = PointMapReconstructor(max_points=30000, spatial_bounds=None)
 
     for task_id in tqdm.tqdm(range(num_tasks_in_suite)):
         # Get task in suite
         task = task_suite.get_task(task_id)
+        reconstructor.reset()
         env, task_description = get_libero_env(task, "llava", resolution=args.resolution)
 
         # Get dataset for task
@@ -186,6 +202,7 @@ def main(args):
 
                 # Execute demo action in environment
                 obs, reward, done, info = env.step(action.tolist())
+                reconstructor.capture_frame(obs, env, float(_), int(_))
 
             # At end of episode, save replayed trajectories to new HDF5 files (only keep successes)
             if done:
@@ -211,6 +228,9 @@ def main(args):
                 ep_data_grp.create_dataset("dones", data=dones)
 
                 num_success += 1
+                pointcloud_dir = os.path.join(args.libero_target_dir, "pointclouds")
+                os.makedirs(pointcloud_dir, exist_ok=True)
+                reconstructor.save_frames_as_json(pointcloud_dir, f"{task.name}_demo_{i}")
 
             num_replays += 1
 

@@ -16,12 +16,12 @@ from lerobot.common.datasets.utils import (
     write_info,
     write_task,
 )
-from .config import LIBERO_FEATURES
-from .lerobot_utils import validate_all_metadata
-from .libero_utils import load_local_episodes
+from config import LIBERO_FEATURES
+from lerobot_utils import validate_all_metadata
+from libero_utils import load_local_episodes
 from ray.runtime_env import RuntimeEnv
 from tqdm import tqdm
-
+import json
 
 def setup_logger():
     import sys
@@ -180,6 +180,34 @@ class AggregateDatasets(PipelineStep):
             write_task(task_index, task, aggr_meta.root)
 
         write_info(aggr_meta.info, aggr_meta.root)
+        # 保存点云映射
+        pointcloud_mapping = {
+            'datasets': [],
+            'episode_mapping': {}
+        }
+        for dataset_index, meta in enumerate(all_metadata):
+            dataset_name = self.raw_dirs[dataset_index].name
+            pointcloud_mapping['datasets'].append(dataset_name)
+
+            for episode_index in range(meta.total_episodes):
+                aggr_episode_index = episode_index + self.datasets_aggr_episode_index_shift[dataset_index]
+                task_index = meta.episodes[episode_index]['tasks'][0]
+                task_name = meta.tasks[task_index]
+
+                pointcloud_mapping['episode_mapping'][str(aggr_episode_index)] = {
+                    'source_dataset': dataset_name,
+                    'source_episode': episode_index,
+                    'task': task_name,
+                    'pointcloud_files': {
+                        'meta': f"pointclouds/pointmeta_{task_name.replace(' ', '_')}_demo_{episode_index}.json",
+                        'frames': f"pointclouds/pointframes_{task_name.replace(' ', '_')}_demo_{episode_index}.json"
+                    }
+                }
+
+        pointcloud_mapping_path = aggr_meta.root / "pointcloud_mapping.json"
+        with open(pointcloud_mapping_path, 'w') as f:
+            json.dump(pointcloud_mapping, f, indent=2)
+        logger.info(f"Saved pointcloud mapping to {pointcloud_mapping_path}")
 
         self.datasets_task_index_to_aggr_task_index = datasets_task_index_to_aggr_task_index
         self.datasets_aggr_episode_index_shift = datasets_aggr_episode_index_shift
