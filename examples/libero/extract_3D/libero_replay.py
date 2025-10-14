@@ -8,7 +8,7 @@ import numpy as np
 import imageio
 from libero.libero import benchmark
 from libero.libero import get_libero_path
-from libero.libero.envs import OffScreenRenderEnv
+from libero.libero.envs import OffScreenRenderEnv,SegmentationRenderEnv
 import tqdm
 import tyro
 import io
@@ -609,8 +609,21 @@ def _get_libero_env(task, resolution, seed):
         "camera_depths": True,  # 全部启用深度
         "camera_segmentations": "instance",  # 🔥 新增：启用instance分割
     }
-    env = OffScreenRenderEnv(**env_args)
+    # env = OffScreenRenderEnv(**env_args)
+    env = SegmentationRenderEnv(**env_args)
     env.seed(0)
+    # === 调试：打印环境结构 ===
+    # print("\n=== 调试环境属性 ===")
+    # print(f"env类型: {type(env)}")
+    # print(f"env属性: {[attr for attr in dir(env) if 'object' in attr.lower()]}")
+    # if hasattr(env, 'env'):
+    #     print(f"底层env属性: {[attr for attr in dir(env.env) if 'object' in attr.lower()]}")
+    # if hasattr(env.env, 'model') and hasattr(env.env.model, 'instances_to_ids'):
+    #     print("\n=== instances_to_ids ===")
+    #     for i, (name, ids) in enumerate(env.env.model.instances_to_ids.items()):
+    #         print(f"  Index {i}: {name} -> {ids}")
+    #     print("========================\n")
+    # ========================
     return env, task_description
 
 

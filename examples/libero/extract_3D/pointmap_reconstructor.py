@@ -25,6 +25,7 @@ class PointMapReconstructor:
         self.spatial_bounds = spatial_bounds
         self.frames = []
         self.cam_names = None
+        self.class_id_to_name = {}
 
         if spatial_bounds:
             print(f"[PointMap] 启用空间过滤:")
@@ -35,6 +36,7 @@ class PointMapReconstructor:
     def reset(self):
         """清空缓存，准备处理新的episode"""
         self.frames = []
+        self.class_id_to_name={}
         # cam_names保留，避免重复检测
         print(f"[PointMap] 缓存已清空，准备新episode")
 
@@ -122,11 +124,83 @@ class PointMapReconstructor:
     #
     #     # print(f"[PointMap] 帧 {step_idx}: {merged_points.shape[0]} 点")
     #     return merged_points.shape[0]
+    def _build_class_id_mapping(self, env, first_frame_obs):
+        """根据get_segmentation_instances的逻辑构建映射"""
+
+        if hasattr(env, 'segmentation_id_mapping'):
+            print("\n=== 构建ID映射（基于官方逻辑）===")
+
+            # 关键：分割图ID = segmentation_id_mapping的key + 1
+            for seg_id, instance_name in env.segmentation_id_mapping.items():
+                pixel_id = seg_id + 1  # ← 这是分割图中的实际ID
+
+                # 提取类名
+                if instance_name in ["OnTheGroundPanda0", "NullMount0"]:
+                    class_name = "robot"
+                elif "_" in instance_name and instance_name.split("_")[-1].isdigit():
+                    class_name = "_".join(instance_name.split("_")[:-1])
+                else:
+                    class_name = instance_name
+
+                self.class_id_to_name[pixel_id] = class_name
+                print(f"  ID {pixel_id} -> {class_name} (from {instance_name})")
+
+            # 添加机器人ID（如果有）
+            if hasattr(env, 'segmentation_robot_id') and env.segmentation_robot_id is not None:
+                robot_pixel_id = env.segmentation_robot_id + 1
+                self.class_id_to_name[robot_pixel_id] = "robot"
+                print(f"  ID {robot_pixel_id} -> robot (robot_id)")
+
+            if env.segmentation_id_mapping:
+                max_seg_id = max(env.segmentation_id_mapping.keys())
+                gripper_pixel_id = max_seg_id + 2  # +1映射到分割图，再+1是gripper
+                self.class_id_to_name[gripper_pixel_id] = "gripper"
+                print(f"  ID {gripper_pixel_id} -> gripper (固定，最大ID+2)")
+
+            print(f"[PointMap] 获取映射: {len(self.class_id_to_name)} 个")
+
+        # 固定ID 0为环境
+        if 0 not in self.class_id_to_name:
+            self.class_id_to_name[0] = "environment"
+            print(f"  ID 0 -> environment (固定)")
+
+        # 检查未映射的ID
+        visible_ids = set()
+        for cam_name in self.cam_names:
+            seg = first_frame_obs[f'{cam_name}_segmentation_instance']
+            visible_ids.update(np.unique(seg).tolist())
+
+        unmapped_ids = visible_ids - set(self.class_id_to_name.keys())
+        if unmapped_ids:
+            print(f"[PointMap] 未映射的ID: {sorted(unmapped_ids)}")
+            for uid in unmapped_ids:
+                self.class_id_to_name[int(uid)] = f"unknown_{uid}"
+
+
     def capture_frame(self, obs: dict, env, timestamp: float, step_idx: int):
         """捕获一帧4视角合并点云"""
         if self.cam_names is None:
             self.cam_names = [k.replace('_depth', '') for k in obs.keys() if k.endswith('_depth')]
             print(f"[PointMap] 检测到 {len(self.cam_names)} 个深度相机: {self.cam_names}")
+        if not self.class_id_to_name:
+            try:
+                self._build_class_id_mapping(env, obs)
+                # print("成功保存class id")
+                # print(f"[PointMap] 总映射数: {len(self.class_id_to_name)}")
+                #
+                # # ← 添加这个调试
+                # print(f"[PointMap] 所有keys: {list(self.class_id_to_name.keys())}")
+                # print(f"[PointMap] keys类型: {[type(k) for k in self.class_id_to_name.keys()]}")
+                #
+                # print("\n========== 完整ID映射表 ==========")
+                # for bid in sorted(self.class_id_to_name.keys()):
+                #     # 检查类型
+                #     print(f"  ID {int(bid):3d} -> {self.class_id_to_name[bid]}")
+                # print("==================================\n")
+            except Exception as e:
+                print(f"保存class id失败: {e}")
+                import traceback
+                traceback.print_exc()
 
         all_points = []
         all_colors_rgb = []  # 🔥 RGB颜色
@@ -367,7 +441,8 @@ class PointMapReconstructor:
             'total_frames': len(self.frames),
             'max_points_per_frame': self.max_points,
             'cameras': self.cam_names,
-            'site_mapping': site_mapping  # 🔥 直接保存在metadata里
+            # 'site_mapping': site_mapping  # 🔥 直接保存在metadata里
+            'class_id_to_name': self.class_id_to_name,  # 而不是 'site_mapping'
         }
 
         meta_path = f"{output_dir}/pointmeta_ep_{episode_id}.json"
