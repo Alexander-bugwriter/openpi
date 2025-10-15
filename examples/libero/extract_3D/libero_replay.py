@@ -15,6 +15,7 @@ import io
 from PIL import Image
 # from Voxel_Reconstructor import SimpleVoxelReconstructor
 from pointmap_reconstructor import PointMapReconstructor
+from voxel_reconstructor import VoxelReconstructor
 import robosuite.macros as macros
 import json
 print(f"IMAGE_CONVENTION: {macros.IMAGE_CONVENTION}")
@@ -337,10 +338,16 @@ def replay_libero_episodes(args: ReplayArgs) -> None:
         'z': (0.35, 1.5)  # 高度范围（桌面以上）
     }
 
-    reconstructor = PointMapReconstructor(
-        max_points=30000,
-        spatial_bounds=spatial_bounds  # 或者设为None不过滤
+    # reconstructor = PointMapReconstructor(
+    #     max_points=30000,
+    #     spatial_bounds=spatial_bounds  # 或者设为None不过滤
+    # )
+    reconstructor = VoxelReconstructor(
+        voxel_grid_size=(64, 64, 64),  # 可以调整分辨率
+        spatial_bounds=spatial_bounds,  # 必须指定，用于计算体素大小
+        min_points_per_voxel=3  # 最小点数阈值（可调整）
     )
+
     for episode_idx, episode_file in enumerate(episode_files):
         logging.info(f"\n=== 回放 Episode {episode_idx + 1}: {episode_file.name} ===")
 
