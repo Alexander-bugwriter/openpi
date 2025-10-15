@@ -132,13 +132,12 @@ class VoxelReconstructor:
         voxel_grid = self._voxelize_points(merged_points, merged_labels)
 
         self.frames.append({
-            'timestamp': float(timestamp),
             'step_idx': int(step_idx),
             'voxel_grid': voxel_grid  # shape: (nx, ny, nz), 每个元素是该体素的ID
         })
 
         occupied_voxels = np.sum(voxel_grid >= 0)
-        print(f"[Voxel] 帧 {step_idx}: {merged_points.shape[0]} 点 -> {occupied_voxels} 占用体素")
+        # print(f"[Voxel] 帧 {step_idx}: {merged_points.shape[0]} 点 -> {occupied_voxels} 占用体素")
 
         return occupied_voxels
 
@@ -266,54 +265,59 @@ class VoxelReconstructor:
             else:
                 filtered_voxels += 1
 
-        if filtered_voxels > 0:
-            print(f"[Voxel] 过滤了 {filtered_voxels} 个点数不足的体素 "
-                  f"(保留 {assigned_voxels} 个, 阈值: {self.min_points_per_voxel})")
+        # if filtered_voxels > 0:
+            # print(f"[Voxel] 过滤了 {filtered_voxels} 个点数不足的体素 "
+            #       f"(保留 {assigned_voxels} 个, 阈值: {self.min_points_per_voxel})")
 
         return voxel_grid
 
     def save_frames_as_json(self, output_dir: str, episode_id: int, env=None):
-        """保存体素帧序列为JSON（metadata和frames合并在一个文件中）"""
+        """保存体素帧序列为紧凑格式JSON: [time_step, instance_id, ix, iy, iz]"""
         os.makedirs(output_dir, exist_ok=True)
 
-        # 保存帧数据（体素网格压缩存储）
-        frames_data = []
-        for frame in self.frames:
+        # 收集所有体素数据为紧凑格式 [time_step, instance_id, ix, iy, iz]
+        compact_voxels = []
+        step_indices = []  # 记录每个time_step对应的step_idx
+
+        for frame_idx, frame in enumerate(self.frames):
             voxel_grid = frame['voxel_grid']
+            step_indices.append(frame['step_idx'])
 
-            # 只保存非空体素的坐标和ID
+            # 找到所有非空体素
             occupied_indices = np.argwhere(voxel_grid >= 0)
-            occupied_ids = voxel_grid[voxel_grid >= 0]
 
-            frames_data.append({
-                'timestamp': frame['timestamp'],
-                'step_idx': frame['step_idx'],
-                'occupied_voxels': occupied_indices.tolist(),  # [[ix, iy, iz], ...]
-                'voxel_ids': occupied_ids.tolist()  # [id1, id2, ...]
-            })
+            for ix, iy, iz in occupied_indices:
+                instance_id = int(voxel_grid[ix, iy, iz])
+                compact_voxels.append([frame_idx, instance_id, int(ix), int(iy), int(iz)])
 
-        # 合并metadata和frames到一个文件
+        # 合并metadata和紧凑数据到一个文件
         combined_data = {
             'metadata': {
                 'episode_id': episode_id,
                 'total_frames': len(self.frames),
-                'voxel_grid_size': self.voxel_grid_size,
+                'voxel_grid_size': list(self.voxel_grid_size),
                 'spatial_bounds': self.spatial_bounds,
                 'voxel_size': self.voxel_size,
                 'min_points_per_voxel': self.min_points_per_voxel,
                 'cameras': self.cam_names,
                 'class_id_to_name': self.class_id_to_name,
+                'step_indices': step_indices,  # 每帧对应的step_idx
+                'data_format': 'compact',
+                'data_description': 'Each row: [time_step, instance_id, ix, iy, iz]'
             },
-            'frames': frames_data
+            'voxels': compact_voxels  # 紧凑格式: [[t, id, x, y, z], ...]
         }
 
         output_path = f"{output_dir}/voxel_ep_{episode_id}.json"
-        print(f"[Voxel] 正在保存 {len(self.frames)} 帧到 {output_path}...")
+        print(f"[Voxel] 正在保存 {len(self.frames)} 帧 ({len(compact_voxels)} 体素) 到 {output_path}...")
+
         with open(output_path, 'w') as f:
             json.dump(combined_data, f)
 
         size_mb = os.path.getsize(output_path) / 1024 / 1024
         print(f"[Voxel] 已保存 -> {output_path} ({size_mb:.1f} MB)")
+        print(f"[Voxel] 压缩率: {len(compact_voxels)} 体素记录")
+
         return output_path
 
     def get_summary(self):
@@ -326,14 +330,11 @@ class VoxelReconstructor:
             voxel_grid = frame['voxel_grid']
             occupied_counts.append(np.sum(voxel_grid >= 0))
 
-        duration = self.frames[-1]['timestamp'] - self.frames[0]['timestamp']
-
         return {
             'total_frames': len(self.frames),
             'voxel_grid_size': self.voxel_grid_size,
             'avg_occupied_voxels': int(np.mean(occupied_counts)),
             'max_occupied_voxels': max(occupied_counts),
             'min_occupied_voxels': min(occupied_counts),
-            'duration_seconds': float(duration),
             'cameras': self.cam_names
         }
