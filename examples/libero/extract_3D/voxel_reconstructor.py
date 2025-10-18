@@ -29,6 +29,7 @@ class VoxelReconstructor:
         self.frames = []
         self.cam_names = None
         self.class_id_to_name = {}
+        self.step_counter = 0
 
         # 计算体素大小
         if spatial_bounds:
@@ -37,10 +38,10 @@ class VoxelReconstructor:
                 (spatial_bounds['y'][1] - spatial_bounds['y'][0]) / voxel_grid_size[1],
                 (spatial_bounds['z'][1] - spatial_bounds['z'][0]) / voxel_grid_size[2]
             ]
-            print(f"[Voxel] 网格分辨率: {voxel_grid_size}")
-            print(f"[Voxel] 空间范围: X{spatial_bounds['x']}, Y{spatial_bounds['y']}, Z{spatial_bounds['z']}")
-            print(f"[Voxel] 体素尺寸: {[f'{s:.4f}' for s in self.voxel_size]} m")
-            print(f"[Voxel] 最小点数阈值: {min_points_per_voxel} 点/体素")
+            # print(f"[Voxel] 网格分辨率: {voxel_grid_size}")
+            # print(f"[Voxel] 空间范围: X{spatial_bounds['x']}, Y{spatial_bounds['y']}, Z{spatial_bounds['z']}")
+            # print(f"[Voxel] 体素尺寸: {[f'{s:.4f}' for s in self.voxel_size]} m")
+            # print(f"[Voxel] 最小点数阈值: {min_points_per_voxel} 点/体素")
         else:
             raise ValueError("VoxelReconstructor需要指定spatial_bounds来计算体素大小")
 
@@ -48,60 +49,148 @@ class VoxelReconstructor:
         """清空缓存，准备处理新的episode"""
         self.frames = []
         self.class_id_to_name = {}
-        print(f"[Voxel] 缓存已清空，准备新episode")
+        self.step_counter = 0
+        # print(f"[Voxel] 缓存已清空，准备新episode")
 
+    # def _build_class_id_mapping(self, env, first_frame_obs):
+    #     """构建ID到类别名称的映射"""
+    #     if hasattr(env, 'segmentation_id_mapping'):
+    #         # print("\n=== 构建ID映射（基于官方逻辑）===")
+    #
+    #         for seg_id, instance_name in env.segmentation_id_mapping.items():
+    #             pixel_id = seg_id + 1
+    #
+    #             if instance_name in ["OnTheGroundPanda0", "NullMount0"]:
+    #                 class_name = "robot"
+    #             elif "_" in instance_name and instance_name.split("_")[-1].isdigit():
+    #                 class_name = "_".join(instance_name.split("_")[:-1])
+    #             else:
+    #                 class_name = instance_name
+    #
+    #             self.class_id_to_name[pixel_id] = class_name
+    #             # print(f"  ID {pixel_id} -> {class_name} (from {instance_name})")
+    #
+    #         if hasattr(env, 'segmentation_robot_id') and env.segmentation_robot_id is not None:
+    #             robot_pixel_id = env.segmentation_robot_id + 1
+    #             self.class_id_to_name[robot_pixel_id] = "robot"
+    #             # print(f"  ID {robot_pixel_id} -> robot (robot_id)")
+    #
+    #         if env.segmentation_id_mapping:
+    #             max_seg_id = max(env.segmentation_id_mapping.keys())
+    #             gripper_pixel_id = max_seg_id + 2
+    #             self.class_id_to_name[gripper_pixel_id] = "gripper"
+    #             # print(f"  ID {gripper_pixel_id} -> gripper (固定，最大ID+2)")
+    #
+    #         # print(f"[Voxel] 获取映射: {len(self.class_id_to_name)} 个")
+    #
+    #     if 0 not in self.class_id_to_name:
+    #         self.class_id_to_name[0] = "environment"
+    #         # print(f"  ID 0 -> environment (固定)")
+    #
+    #     # 检查未映射的ID
+    #     visible_ids = set()
+    #     for cam_name in self.cam_names:
+    #         seg = first_frame_obs[f'{cam_name}_segmentation_instance']
+    #         visible_ids.update(np.unique(seg).tolist())
+    #
+    #     unmapped_ids = visible_ids - set(self.class_id_to_name.keys())
+    #     if unmapped_ids:
+    #         print(f"[Voxel] 未映射的ID: {sorted(unmapped_ids)}")
+    #         for uid in unmapped_ids:
+    #             self.class_id_to_name[int(uid)] = f"unknown_{uid}"
+    #
+    #     all_instances = list(env.instance_to_id.keys())
+    #     print(f"完整实例顺序: {all_instances}")
+    #     print(f"segmentation_robot_id: {env.segmentation_robot_id}")
+    #     print(f"segmentation_id_mapping: {env.segmentation_id_mapping}")
     def _build_class_id_mapping(self, env, first_frame_obs):
-        """构建ID到类别名称的映射"""
-        if hasattr(env, 'segmentation_id_mapping'):
-            print("\n=== 构建ID映射（基于官方逻辑）===")
+        """构建ID到类别名称的映射 - 修复版"""
 
-            for seg_id, instance_name in env.segmentation_id_mapping.items():
-                pixel_id = seg_id + 1
-
-                if instance_name in ["OnTheGroundPanda0", "NullMount0"]:
-                    class_name = "robot"
-                elif "_" in instance_name and instance_name.split("_")[-1].isdigit():
-                    class_name = "_".join(instance_name.split("_")[:-1])
-                else:
-                    class_name = instance_name
-
-                self.class_id_to_name[pixel_id] = class_name
-                print(f"  ID {pixel_id} -> {class_name} (from {instance_name})")
-
-            if hasattr(env, 'segmentation_robot_id') and env.segmentation_robot_id is not None:
-                robot_pixel_id = env.segmentation_robot_id + 1
-                self.class_id_to_name[robot_pixel_id] = "robot"
-                print(f"  ID {robot_pixel_id} -> robot (robot_id)")
-
-            if env.segmentation_id_mapping:
-                max_seg_id = max(env.segmentation_id_mapping.keys())
-                gripper_pixel_id = max_seg_id + 2
-                self.class_id_to_name[gripper_pixel_id] = "gripper"
-                print(f"  ID {gripper_pixel_id} -> gripper (固定，最大ID+2)")
-
-            print(f"[Voxel] 获取映射: {len(self.class_id_to_name)} 个")
-
-        if 0 not in self.class_id_to_name:
-            self.class_id_to_name[0] = "environment"
-            print(f"  ID 0 -> environment (固定)")
-
-        # 检查未映射的ID
+        # 1. 先获取分割图中实际出现的所有ID
         visible_ids = set()
         for cam_name in self.cam_names:
             seg = first_frame_obs[f'{cam_name}_segmentation_instance']
             visible_ids.update(np.unique(seg).tolist())
 
+        # 2. 找到最大的ID（这就是gripper）
+        non_bg_ids = visible_ids - {0}  # 临时移除背景来找最大值
+        if non_bg_ids:
+            max_visible_id = max(non_bg_ids)
+        else:
+            max_visible_id = 0
+
+        # 3. 获取完整的实例列表
+        all_instances = list(env.instance_to_id.keys())
+
+        # 4. 找出所有机器人相关实例的索引
+        robot_related_indices = []
+        for i, instance_name in enumerate(all_instances):
+            # if any(keyword in instance_name for keyword in ['Panda', 'Mount']):
+            #     robot_related_indices.append(i)
+            if 'Panda' in instance_name:
+                robot_related_indices.append(i)
+
+        # 5. 确定robot的ID范围：从第一个robot实例到最大ID-1
+        if robot_related_indices:
+            robot_start_id = min(robot_related_indices) + 1  # +1因为像素ID = 索引+1
+            robot_end_id = max_visible_id - 1  # 最大ID是gripper，所以robot到最大ID-1
+        else:
+            robot_start_id = None
+            robot_end_id = None
+
+        # 6. 构建映射
+        # self.class_id_to_name = {}
+
+        # 背景
+        self.class_id_to_name[0] = "environment"
+
+        # 遍历所有实例，构建物品的映射
+        for i, instance_name in enumerate(all_instances):
+            pixel_id = i + 1  # 像素ID = 索引 + 1
+
+            # 如果是机器人相关实例，跳过（稍后统一处理）
+            # if any(keyword in instance_name for keyword in ['Panda', 'Mount', 'Gripper']):
+            #     continue
+            if 'Panda' in instance_name:
+                continue
+
+            # 物品：去掉末尾的数字后缀
+            if "_" in instance_name and instance_name.split("_")[-1].isdigit():
+                class_name = "_".join(instance_name.split("_")[:-1])
+            else:
+                class_name = instance_name
+
+            self.class_id_to_name[pixel_id] = class_name
+
+        # 7. 统一标记robot ID范围（从第一个robot实例到最大ID-1）
+        if robot_start_id is not None and robot_end_id is not None:
+            for robot_id in range(robot_start_id, robot_end_id + 1):
+                if robot_id in visible_ids:  # 只标记实际出现的ID
+                    self.class_id_to_name[robot_id] = "robot"
+
+        # 8. 标记gripper（最大的ID）
+        self.class_id_to_name[max_visible_id] = "gripper"
+
+        # 9. 检查是否有未映射的ID（用于调试）
         unmapped_ids = visible_ids - set(self.class_id_to_name.keys())
         if unmapped_ids:
-            print(f"[Voxel] 未映射的ID: {sorted(unmapped_ids)}")
+            print(f"[Voxel] ⚠️ 仍有未映射的ID: {sorted(unmapped_ids)}")
+            # 给未映射的ID分配默认名称
             for uid in unmapped_ids:
                 self.class_id_to_name[int(uid)] = f"unknown_{uid}"
 
-    def capture_frame(self, obs: dict, env, timestamp: float, step_idx: int):
+        # 打印映射摘要（可选）
+        # print(f"[Voxel] ID映射构建完成:")
+        # print(f"  - 物品ID范围: 1 ~ {robot_start_id - 1 if robot_start_id else 'N/A'}")
+        # print(f"  - Robot ID范围: {robot_start_id} ~ {robot_end_id}")
+        # print(f"  - Gripper ID: {max_visible_id}")
+        # print(f"  - 总映射数: {len(self.class_id_to_name)}")
+
+    def capture_frame(self, obs: dict, env):
         """捕获一帧并体素化"""
         if self.cam_names is None:
             self.cam_names = [k.replace('_depth', '') for k in obs.keys() if k.endswith('_depth')]
-            print(f"[Voxel] 检测到 {len(self.cam_names)} 个深度相机: {self.cam_names}")
+            # print(f"[Voxel] 检测到 {len(self.cam_names)} 个深度相机: {self.cam_names}")
 
         if not self.class_id_to_name:
             try:
@@ -132,11 +221,12 @@ class VoxelReconstructor:
         voxel_grid = self._voxelize_points(merged_points, merged_labels)
 
         self.frames.append({
-            'step_idx': int(step_idx),
+            'step_idx': int(self.step_counter),
             'voxel_grid': voxel_grid  # shape: (nx, ny, nz), 每个元素是该体素的ID
         })
 
         occupied_voxels = np.sum(voxel_grid >= 0)
+        self.step_counter += 1
         # print(f"[Voxel] 帧 {step_idx}: {merged_points.shape[0]} 点 -> {occupied_voxels} 占用体素")
 
         return occupied_voxels
@@ -309,14 +399,14 @@ class VoxelReconstructor:
         }
 
         output_path = f"{output_dir}/voxel_ep_{episode_id}.json"
-        print(f"[Voxel] 正在保存 {len(self.frames)} 帧 ({len(compact_voxels)} 体素) 到 {output_path}...")
+        # print(f"[Voxel] 正在保存 {len(self.frames)} 帧 ({len(compact_voxels)} 体素) 到 {output_path}...")
 
         with open(output_path, 'w') as f:
             json.dump(combined_data, f)
 
-        size_mb = os.path.getsize(output_path) / 1024 / 1024
-        print(f"[Voxel] 已保存 -> {output_path} ({size_mb:.1f} MB)")
-        print(f"[Voxel] 压缩率: {len(compact_voxels)} 体素记录")
+        # size_mb = os.path.getsize(output_path) / 1024 / 1024
+        # print(f"[Voxel] 已保存 -> {output_path} ({size_mb:.1f} MB)")
+        # print(f"[Voxel] 压缩率: {len(compact_voxels)} 体素记录")
 
         return output_path
 

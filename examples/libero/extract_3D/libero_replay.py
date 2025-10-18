@@ -24,54 +24,104 @@ LIBERO_ENV_RESOLUTION = 256
 LIBERO_DUMMY_ACTION = [0.0] * 6 + [-1.0]
 TASK_TO_SUITE_MAPPING = {
     # libero_10套件 (task_index 0-9)
-    0: ('libero_10', 4),  # put the white mug on the left plate and put the yellow and white mug on the right plate
-    1: ('libero_10', 6),  # put the white mug on the plate and put the chocolate pudding to the right of the plate
+    7: ('libero_10', 4),  # put the white mug on the left plate and put the yellow and white mug on the right plate
+    8: ('libero_10', 6),  # put the white mug on the plate and put the chocolate pudding to the right of the plate
     2: ('libero_10', 9),  # put the yellow and white mug in the microwave and close it
-    3: ('libero_10', 2),  # turn on the stove and put the moka pot on it
+    0: ('libero_10', 2),  # turn on the stove and put the moka pot on it
     4: ('libero_10', 7),  # put both the alphabet soup and the cream cheese box in the basket
     5: ('libero_10', 0),  # put both the alphabet soup and the tomato sauce in the basket
-    6: ('libero_10', 8),  # put both moka pots on the stove
-    7: ('libero_10', 1),  # put both the cream cheese box and the butter in the basket
-    8: ('libero_10', 3),  # put the black bowl in the bottom drawer of the cabinet and close it
+    3: ('libero_10', 8),  # put both moka pots on the stove
+    6: ('libero_10', 1),  # put both the cream cheese box and the butter in the basket
+    1: ('libero_10', 3),  # put the black bowl in the bottom drawer of the cabinet and close it
     9: ('libero_10', 5),  # pick up the book and place it in the back compartment of the caddy
-
-    # libero_goal套件 (task_index 10-19)
-    10: ('libero_goal', 8),  # put the bowl on the plate
-    11: ('libero_goal', 9),  # put the wine bottle on the rack
-    12: ('libero_goal', 3),  # open the top drawer and put the bowl inside
-    13: ('libero_goal', 6),  # put the cream cheese in the bowl
-    14: ('libero_goal', 2),  # put the wine bottle on top of the cabinet
-    15: ('libero_goal', 5),  # push the plate to the front of the stove
-    16: ('libero_goal', 7),  # turn on the stove
-    17: ('libero_goal', 1),  # put the bowl on the stove
-    18: ('libero_goal', 4),  # put the bowl on top of the cabinet
-    19: ('libero_goal', 0),  # open the middle drawer of the cabinet
-
-    # libero_object套件 (task_index 20-29)
-    20: ('libero_object', 9),  # pick up the orange juice and place it in the basket
-    21: ('libero_object', 4),  # pick up the ketchup and place it in the basket
-    22: ('libero_object', 1),  # pick up the cream cheese and place it in the basket
-    23: ('libero_object', 3),  # pick up the bbq sauce and place it in the basket
-    24: ('libero_object', 0),  # pick up the alphabet soup and place it in the basket
-    25: ('libero_object', 7),  # pick up the milk and place it in the basket
-    26: ('libero_object', 2),  # pick up the salad dressing and place it in the basket
-    27: ('libero_object', 6),  # pick up the butter and place it in the basket
-    28: ('libero_object', 5),  # pick up the tomato sauce and place it in the basket
-    29: ('libero_object', 8),  # pick up the chocolate pudding and place it in the basket
-
-    # libero_spatial套件 (task_index 30-39)
-    30: ('libero_spatial', 6),  # pick up the black bowl next to the cookie box and place it on the plate
-    31: ('libero_spatial', 4),
-    # pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate
-    32: ('libero_spatial', 5),  # pick up the black bowl on the ramekin and place it on the plate
-    33: ('libero_spatial', 7),  # pick up the black bowl on the stove and place it on the plate
-    34: ('libero_spatial', 0),  # pick up the black bowl between the plate and the ramekin and place it on the plate
-    35: ('libero_spatial', 3),  # pick up the black bowl on the cookie box and place it on the plate
-    36: ('libero_spatial', 8),  # pick up the black bowl next to the plate and place it on the plate
-    37: ('libero_spatial', 1),  # pick up the black bowl next to the ramekin and place it on the plate
-    38: ('libero_spatial', 2),  # pick up the black bowl from table center and place it on the plate
-    39: ('libero_spatial', 9),  # pick up the black bowl on the wooden cabinet and place it on the plate
+    #
+    # # libero_goal套件 (task_index 10-19)
+    # 10: ('libero_goal', 8),  # put the bowl on the plate
+    # 11: ('libero_goal', 9),  # put the wine bottle on the rack
+    # 12: ('libero_goal', 3),  # open the top drawer and put the bowl inside
+    # 13: ('libero_goal', 6),  # put the cream cheese in the bowl
+    # 14: ('libero_goal', 2),  # put the wine bottle on top of the cabinet
+    # 15: ('libero_goal', 5),  # push the plate to the front of the stove
+    # 16: ('libero_goal', 7),  # turn on the stove
+    # 17: ('libero_goal', 1),  # put the bowl on the stove
+    # 18: ('libero_goal', 4),  # put the bowl on top of the cabinet
+    # 19: ('libero_goal', 0),  # open the middle drawer of the cabinet
+    #
+    # # libero_object套件 (task_index 20-29)
+    # 20: ('libero_object', 9),  # pick up the orange juice and place it in the basket
+    # 21: ('libero_object', 4),  # pick up the ketchup and place it in the basket
+    # 22: ('libero_object', 1),  # pick up the cream cheese and place it in the basket
+    # 23: ('libero_object', 3),  # pick up the bbq sauce and place it in the basket
+    # 24: ('libero_object', 0),  # pick up the alphabet soup and place it in the basket
+    # 25: ('libero_object', 7),  # pick up the milk and place it in the basket
+    # 26: ('libero_object', 2),  # pick up the salad dressing and place it in the basket
+    # 27: ('libero_object', 6),  # pick up the butter and place it in the basket
+    # 28: ('libero_object', 5),  # pick up the tomato sauce and place it in the basket
+    # 29: ('libero_object', 8),  # pick up the chocolate pudding and place it in the basket
+    #
+    # # libero_spatial套件 (task_index 30-39)
+    # 30: ('libero_spatial', 6),  # pick up the black bowl next to the cookie box and place it on the plate
+    # 31: ('libero_spatial', 4),
+    # # pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate
+    # 32: ('libero_spatial', 5),  # pick up the black bowl on the ramekin and place it on the plate
+    # 33: ('libero_spatial', 7),  # pick up the black bowl on the stove and place it on the plate
+    # 34: ('libero_spatial', 0),  # pick up the black bowl between the plate and the ramekin and place it on the plate
+    # 35: ('libero_spatial', 3),  # pick up the black bowl on the cookie box and place it on the plate
+    # 36: ('libero_spatial', 8),  # pick up the black bowl next to the plate and place it on the plate
+    # 37: ('libero_spatial', 1),  # pick up the black bowl next to the ramekin and place it on the plate
+    # 38: ('libero_spatial', 2),  # pick up the black bowl from table center and place it on the plate
+    # 39: ('libero_spatial', 9),  # pick up the black bowl on the wooden cabinet and place it on the plate
 }
+# TASK_TO_SUITE_MAPPING = {
+#     # libero_10套件 (task_index 0-9)
+#     0: ('libero_10', 4),  # put the white mug on the left plate and put the yellow and white mug on the right plate
+#     1: ('libero_10', 6),  # put the white mug on the plate and put the chocolate pudding to the right of the plate
+#     2: ('libero_10', 9),  # put the yellow and white mug in the microwave and close it
+#     3: ('libero_10', 2),  # turn on the stove and put the moka pot on it
+#     4: ('libero_10', 7),  # put both the alphabet soup and the cream cheese box in the basket
+#     5: ('libero_10', 0),  # put both the alphabet soup and the tomato sauce in the basket
+#     6: ('libero_10', 8),  # put both moka pots on the stove
+#     7: ('libero_10', 1),  # put both the cream cheese box and the butter in the basket
+#     8: ('libero_10', 3),  # put the black bowl in the bottom drawer of the cabinet and close it
+#     9: ('libero_10', 5),  # pick up the book and place it in the back compartment of the caddy
+#
+#     # libero_goal套件 (task_index 10-19)
+#     10: ('libero_goal', 8),  # put the bowl on the plate
+#     11: ('libero_goal', 9),  # put the wine bottle on the rack
+#     12: ('libero_goal', 3),  # open the top drawer and put the bowl inside
+#     13: ('libero_goal', 6),  # put the cream cheese in the bowl
+#     14: ('libero_goal', 2),  # put the wine bottle on top of the cabinet
+#     15: ('libero_goal', 5),  # push the plate to the front of the stove
+#     16: ('libero_goal', 7),  # turn on the stove
+#     17: ('libero_goal', 1),  # put the bowl on the stove
+#     18: ('libero_goal', 4),  # put the bowl on top of the cabinet
+#     19: ('libero_goal', 0),  # open the middle drawer of the cabinet
+#
+#     # libero_object套件 (task_index 20-29)
+#     20: ('libero_object', 9),  # pick up the orange juice and place it in the basket
+#     21: ('libero_object', 4),  # pick up the ketchup and place it in the basket
+#     22: ('libero_object', 1),  # pick up the cream cheese and place it in the basket
+#     23: ('libero_object', 3),  # pick up the bbq sauce and place it in the basket
+#     24: ('libero_object', 0),  # pick up the alphabet soup and place it in the basket
+#     25: ('libero_object', 7),  # pick up the milk and place it in the basket
+#     26: ('libero_object', 2),  # pick up the salad dressing and place it in the basket
+#     27: ('libero_object', 6),  # pick up the butter and place it in the basket
+#     28: ('libero_object', 5),  # pick up the tomato sauce and place it in the basket
+#     29: ('libero_object', 8),  # pick up the chocolate pudding and place it in the basket
+#
+#     # libero_spatial套件 (task_index 30-39)
+#     30: ('libero_spatial', 6),  # pick up the black bowl next to the cookie box and place it on the plate
+#     31: ('libero_spatial', 4),
+#     # pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate
+#     32: ('libero_spatial', 5),  # pick up the black bowl on the ramekin and place it on the plate
+#     33: ('libero_spatial', 7),  # pick up the black bowl on the stove and place it on the plate
+#     34: ('libero_spatial', 0),  # pick up the black bowl between the plate and the ramekin and place it on the plate
+#     35: ('libero_spatial', 3),  # pick up the black bowl on the cookie box and place it on the plate
+#     36: ('libero_spatial', 8),  # pick up the black bowl next to the plate and place it on the plate
+#     37: ('libero_spatial', 1),  # pick up the black bowl next to the ramekin and place it on the plate
+#     38: ('libero_spatial', 2),  # pick up the black bowl from table center and place it on the plate
+#     39: ('libero_spatial', 9),  # pick up the black bowl on the wooden cabinet and place it on the plate
+# }
 def get_libero_task_info(dataset_task_idx):
     """根据数据集task_index获取对应的libero套件和local_task_id"""
     if dataset_task_idx in TASK_TO_SUITE_MAPPING:
@@ -141,7 +191,9 @@ def hsl_to_rgb(h, s, l):
 
 @dataclasses.dataclass
 class ReplayArgs:
-    dataset_path: str = "/home/lyh/PycharmProjects/openpi/examples/libero/lerobot_libero_dataset"  # 硬编码数据集路径
+    # dataset_path: str = "/home/lyh/PycharmProjects/openpi/examples/libero/lerobot_3D_libero_dataset"  # 硬编码数据集路径
+    # dataset_path: str = "/home/lyh/PycharmProjects/openpi/examples/libero/lerobot_libero_dataset"
+    dataset_path: str = "/home/lyh/PycharmProjects/openpi/examples/libero/lerobot_3D_libero_dataset_test/KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it_demo"
     video_out_path: str = "data/libero_replay_videos"  # 输出视频路径
     num_steps_wait: int = 10  # 等待物体稳定的步数
     seed: int = 0  # 随机种子
@@ -244,14 +296,8 @@ def action_to_libero_action(action_7d):
     """将7维动作转换为LIBERO格式
     假设动作格式为: [dx, dy, dz, drx, dry, drz, gripper_action]
     """
-    if len(action_7d) == 7:
-        return action_7d.tolist()
-    else:
-        # 如果不是7维，填充或截断
-        padded_action = np.zeros(7, dtype=action_7d.dtype)
-        min_len = min(len(action_7d), 7)
-        padded_action[:min_len] = action_7d[:min_len]
-        return padded_action.tolist()
+
+    return action_7d.tolist()
 
 
 def integrate_voxel_reconstruction(reconstructor, env, timestamp, step_idx):
@@ -345,207 +391,203 @@ def replay_libero_episodes(args: ReplayArgs) -> None:
     reconstructor = VoxelReconstructor(
         voxel_grid_size=(64, 64, 64),  # 可以调整分辨率
         spatial_bounds=spatial_bounds,  # 必须指定，用于计算体素大小
-        min_points_per_voxel=3  # 最小点数阈值（可调整）
+        min_points_per_voxel=1  # 最小点数阈值（可调整）
     )
 
     for episode_idx, episode_file in enumerate(episode_files):
         logging.info(f"\n=== 回放 Episode {episode_idx + 1}: {episode_file.name} ===")
 
-        try:
-            # 加载episode数据
-            df = pd.read_parquet(episode_file)
-            # actions = check_parquet_precision(episode_file)
-            # trace_action_conversion(actions[0])
 
-            # 提取数据
-            states = np.stack(df['state'].values)
-            actions = np.stack(df['actions'].values)
-            timestamps = df['timestamp'].values
-            task_idx = int(df['task_index'].iloc[0])
-            episode_id = int(df['episode_index'].iloc[0])
+        # 加载episode数据
+        df = pd.read_parquet(episode_file)
+        # actions = check_parquet_precision(episode_file)
+        # trace_action_conversion(actions[0])
 
-            logging.info(f"任务ID: {task_idx}, Episode ID: {episode_id}")
-            logging.info(f"总帧数: {len(df)}, 持续时间: {timestamps[-1] - timestamps[0]:.2f}s")
-            logging.info(f"状态形状: {states.shape}, 动作形状: {actions.shape}")
+        # 提取数据
+        states = np.stack(df['state'].values)
+        actions = np.stack(df['actions'].values)
+        timestamps = df['timestamp'].values
+        task_idx = int(df['task_index'].iloc[0])
+        episode_id = int(df['episode_index'].iloc[0])
 
-            # 解码原始图像序列
-            original_images = []
-            for i in range(len(df)):
-                try:
-                    img_data = df['image'].iloc[i]
-                    img = decode_image_from_bytes(img_data)
-                    original_images.append(img)
-                except Exception as e:
-                    logging.warning(f"解码图像 {i} 失败: {e}")
-                    # 使用前一帧或创建空白帧
-                    if original_images:
-                        original_images.append(original_images[-1])
-                    else:
-                        original_images.append(np.zeros((256, 256, 3), dtype=np.uint8))
+        logging.info(f"任务ID: {task_idx}, Episode ID: {episode_id}")
+        logging.info(f"总帧数: {len(df)}, 持续时间: {timestamps[-1] - timestamps[0]:.2f}s")
+        logging.info(f"状态形状: {states.shape}, 动作形状: {actions.shape}")
 
-            logging.info(f"成功解码 {len(original_images)} 张原始图像")
-
+        # 解码原始图像序列
+        original_images = []
+        for i in range(len(df)):
             try:
-                suite_name, local_task_id = get_libero_task_info(task_idx)
-                logging.info(f"使用任务套件: {suite_name}, 套件内任务索引: {local_task_id}")
-            except ValueError as e:
-                logging.error(f"任务映射错误: {e}")
-                continue
+                img_data = df['image'].iloc[i]
+                img = decode_image_from_bytes(img_data)
+                original_images.append(img)
+            except Exception as e:
+                logging.warning(f"解码图像 {i} 失败: {e}")
+                # 使用前一帧或创建空白帧
+                if original_images:
+                    original_images.append(original_images[-1])
+                else:
+                    original_images.append(np.zeros((256, 256, 3), dtype=np.uint8))
 
-                # 初始化LIBERO任务套件
-            benchmark_dict = benchmark.get_benchmark_dict()
-            task_suite = benchmark_dict[suite_name]()
+        logging.info(f"成功解码 {len(original_images)} 张原始图像")
 
-            # 获取任务
-            task = task_suite.get_task(local_task_id)
-            initial_states = task_suite.get_task_init_states(local_task_id)
+        try:
+            suite_name, local_task_id = get_libero_task_info(task_idx)
+            logging.info(f"使用任务套件: {suite_name}, 套件内任务索引: {local_task_id}")
+        except ValueError as e:
+            logging.error(f"任务映射错误: {e}")
+            continue
 
-            # 初始化环境
-            env, task_description = _get_libero_env(task, LIBERO_ENV_RESOLUTION, args.seed)
-            logging.info(f"任务描述: {task_description}")
+            # 初始化LIBERO任务套件
+        benchmark_dict = benchmark.get_benchmark_dict()
+        task_suite = benchmark_dict[suite_name]()
 
-            # 重置环境
-            env.reset()
-            reconstructor.reset()
+        # 获取任务
+        task = task_suite.get_task(local_task_id)
+        initial_states = task_suite.get_task_init_states(local_task_id)
 
-            # 设置初始状态
-            init_state_idx = min(episode_id % len(initial_states), len(initial_states) - 1)
-            obs = env.set_init_state(initial_states[init_state_idx])
+        # 初始化环境
+        env, task_description = _get_libero_env(task, LIBERO_ENV_RESOLUTION, args.seed)
+        logging.info(f"任务描述: {task_description}")
 
-            # 回放动作序列
-            replay_images = []
-            # seg_images = []  # 🔥 新增：收集分割图
-            success = False
+        # 重置环境
+        env.reset()
+        reconstructor.reset()
 
-            logging.info("开始回放动作序列...")
+        # 设置初始状态
+        init_state_idx = min(episode_id % len(initial_states), len(initial_states) - 1)
+        obs = env.set_init_state(initial_states[init_state_idx])
+
+        # 回放动作序列
+        replay_images = []
+        # seg_images = []  # 🔥 新增：收集分割图
+        success = False
+
+        logging.info("开始回放动作序列...")
 
 
-            # 等待环境稳定
-            for t in range(args.num_steps_wait):
-                obs, reward, done, info = env.step(LIBERO_DUMMY_ACTION)
-                if done:
-                    success = True
-                    break
+        # 等待环境稳定
+        for t in range(args.num_steps_wait):
+            obs, reward, done, info = env.step(LIBERO_DUMMY_ACTION)
+            if done:
+                success = True
+                break
 
-            # 执行记录的动作
-            for step_idx, action in enumerate(tqdm.tqdm(actions, desc="执行动作")):
+        # 执行记录的动作
+        for step_idx, action in enumerate(tqdm.tqdm(actions, desc="执行动作")):
 
-                # if step_idx == 0:
-                #     print_scene_objects(env, step_idx)
-                #     print_scene_bounds(env.sim.model, env.sim.data, reconstructor)
-                #     print_plate_objects(env.sim.model, env.sim.data)
-                # 获取当前观察图像
-                img = np.ascontiguousarray(obs["agentview_image"][::-1, ::-1])
+            # if step_idx == 0:
+            #     print_scene_objects(env, step_idx)
+            #     print_scene_bounds(env.sim.model, env.sim.data, reconstructor)
+            #     print_plate_objects(env.sim.model, env.sim.data)
+            # 获取当前观察图像
+            img = np.ascontiguousarray(obs["agentview_image"][::-1, ::-1])
 
-                # 转换为uint8并保存
-                if img.dtype != np.uint8:
-                    img = np.clip(img * 255, 0, 255).astype(np.uint8)
+            # 转换为uint8并保存
+            if img.dtype != np.uint8:
+                img = np.clip(img * 255, 0, 255).astype(np.uint8)
 
-                replay_images.append(img)
-                # # 🔥 收集并可视化分割图
-                # seg = obs["agentview_segmentation_instance"].squeeze()
-                # seg_vis = visualize_segmentation(seg, env)
-                # seg_images.append(seg_vis)
-                # if step_idx < 5:  # 前5步打印调试信息
-                #     print(f"步骤 {step_idx}:")
-                #     trace_action_conversion(action)
+            replay_images.append(img)
+            # # 🔥 收集并可视化分割图
+            # seg = obs["agentview_segmentation_instance"].squeeze()
+            # seg_vis = visualize_segmentation(seg, env)
+            # seg_images.append(seg_vis)
+            # if step_idx < 5:  # 前5步打印调试信息
+            #     print(f"步骤 {step_idx}:")
+            #     trace_action_conversion(action)
 
-                # 转换动作格式
-                libero_action = action_to_libero_action(action)
-                # libero_action = high_precision_action_conversion(action)
+            # 转换动作格式
+            libero_action = action_to_libero_action(action)
+            # libero_action = high_precision_action_conversion(action)
 
-                # 执行动作
-                # obs, reward, done, info = env.step(libero_action)
-                try:
-                    obs, reward, done, info = env.step(libero_action)
-                except:
-                    # 如果不接受numpy数组，再转为list但保持精度
-                    libero_action_list = [float(x) for x in libero_action]
-                    obs, reward, done, info = env.step(libero_action_list)
-                # debug_and_capture_voxel(reconstructor, env, 0.0, 0, debug_mode=False)
-                timestamp = timestamps[step_idx] if step_idx < len(timestamps) else step_idx
-                # integrate_voxel_reconstruction(reconstructor, env, timestamp, step_idx)
-                reconstructor.capture_frame(obs, env, timestamp, step_idx)
+            # 执行动作
+            # obs, reward, done, info = env.step(libero_action)
+            try:
+                obs, reward, done, info = env.step(libero_action)
+            except:
+                # 如果不接受numpy数组，再转为list但保持精度
+                libero_action_list = [float(x) for x in libero_action]
+                obs, reward, done, info = env.step(libero_action_list)
+            # debug_and_capture_voxel(reconstructor, env, 0.0, 0, debug_mode=False)
+            timestamp = timestamps[step_idx] if step_idx < len(timestamps) else step_idx
+            # integrate_voxel_reconstruction(reconstructor, env, timestamp, step_idx)
+            reconstructor.capture_frame(obs, env)
 
-                if done:
-                    success = True
-                    logging.info(f"任务在第 {step_idx + 1} 步完成！")
-                    break
+            if done:
+                success = True
+                logging.info(f"任务在第 {step_idx + 1} 步完成！")
+                break
 
-            # 保存最后一帧
-            if not success and len(replay_images) > 0:
-                final_img = np.ascontiguousarray(obs["agentview_image"][::-1, ::-1])
-                if final_img.dtype != np.uint8:
-                    final_img = np.clip(final_img * 255, 0, 255).astype(np.uint8)
-                replay_images.append(final_img)
-                # # 🔥 也保存最后的分割图
-                # seg = obs["agentview_segmentation_instance"].squeeze()
-                # seg_vis = visualize_segmentation(seg, env)
-                # seg_images.append(seg_vis)
+        # 保存最后一帧
+        if not success and len(replay_images) > 0:
+            final_img = np.ascontiguousarray(obs["agentview_image"][::-1, ::-1])
+            if final_img.dtype != np.uint8:
+                final_img = np.clip(final_img * 255, 0, 255).astype(np.uint8)
+            replay_images.append(final_img)
+            # # 🔥 也保存最后的分割图
+            # seg = obs["agentview_segmentation_instance"].squeeze()
+            # seg_vis = visualize_segmentation(seg, env)
+            # seg_images.append(seg_vis)
 
-            # 保存视频
-            if replay_images:
-                suffix = "success" if success else "replay"
-                safe_task_desc = task_description.replace(" ", "_").replace(",", "").replace(".", "")
-                video_filename = f"ep_{episode_idx:03d}_task_{task_idx}_{safe_task_desc}_{suffix}.mp4"
-                video_path = pathlib.Path(args.video_out_path) / video_filename
+        # 保存视频
+        if replay_images:
+            suffix = "success" if success else "replay"
+            safe_task_desc = task_description.replace(" ", "_").replace(",", "").replace(".", "")
+            video_filename = f"ep_{episode_idx:03d}_task_{task_idx}_{safe_task_desc}_{suffix}.mp4"
+            video_path = pathlib.Path(args.video_out_path) / video_filename
 
-                logging.info(f"保存重放视频: {video_path}")
-                logging.info(f"重放视频帧数: {len(replay_images)}")
+            logging.info(f"保存重放视频: {video_path}")
+            logging.info(f"重放视频帧数: {len(replay_images)}")
+
+            imageio.mimwrite(
+                video_path,
+                replay_images,
+                fps=10,
+                codec='libx264'
+            )
+            # 🔥 保存分割图视频
+            # if seg_images:
+            #     seg_video_path = pathlib.Path(args.video_out_path) / f"ep_{episode_idx:03d}_segmentation.mp4"
+            #     logging.info(f"保存分割图视频: {seg_video_path}")
+            #     imageio.mimwrite(seg_video_path, seg_images, fps=10, codec='libx264')
+
+            # 保存原始视频用于对比
+            if args.save_comparison_video and original_images:
+                original_video_path = pathlib.Path(args.video_out_path) / f"ep_{episode_idx:03d}_original.mp4"
+                logging.info(f"保存原始视频: {original_video_path}")
+
+                # 确保原始图像尺寸正确
+                processed_original = []
+                for img in original_images:
+                    if img.shape[:2] != (256, 256):
+                        from PIL import Image as PILImage
+                        img_pil = PILImage.fromarray(img)
+                        img_pil = img_pil.resize((256, 256))
+                        img = np.array(img_pil)
+                    processed_original.append(img)
 
                 imageio.mimwrite(
-                    video_path,
-                    replay_images,
+                    original_video_path,
+                    processed_original,
                     fps=10,
                     codec='libx264'
                 )
-                # 🔥 保存分割图视频
-                # if seg_images:
-                #     seg_video_path = pathlib.Path(args.video_out_path) / f"ep_{episode_idx:03d}_segmentation.mp4"
-                #     logging.info(f"保存分割图视频: {seg_video_path}")
-                #     imageio.mimwrite(seg_video_path, seg_images, fps=10, codec='libx264')
 
-                # 保存原始视频用于对比
-                if args.save_comparison_video and original_images:
-                    original_video_path = pathlib.Path(args.video_out_path) / f"ep_{episode_idx:03d}_original.mp4"
-                    logging.info(f"保存原始视频: {original_video_path}")
+                # 创建并排对比视频
+                if len(replay_images) > 0 and len(processed_original) > 0:
+                    comparison_video_path = pathlib.Path(
+                        args.video_out_path) / f"ep_{episode_idx:03d}_comparison.mp4"
+                    create_comparison_video(processed_original, replay_images, comparison_video_path)
 
-                    # 确保原始图像尺寸正确
-                    processed_original = []
-                    for img in original_images:
-                        if img.shape[:2] != (256, 256):
-                            from PIL import Image as PILImage
-                            img_pil = PILImage.fromarray(img)
-                            img_pil = img_pil.resize((256, 256))
-                            img = np.array(img_pil)
-                        processed_original.append(img)
+            logging.info(f"任务状态: {'成功' if success else '未完成'}")
+            reconstructor.save_frames_as_json(args.video_out_path, episode_idx,env)
 
-                    imageio.mimwrite(
-                        original_video_path,
-                        processed_original,
-                        fps=10,
-                        codec='libx264'
-                    )
+            summary = reconstructor.get_summary()
+            print(f"重建摘要: {summary}")
+        else:
+            logging.warning("没有重放图像帧可保存")
 
-                    # 创建并排对比视频
-                    if len(replay_images) > 0 and len(processed_original) > 0:
-                        comparison_video_path = pathlib.Path(
-                            args.video_out_path) / f"ep_{episode_idx:03d}_comparison.mp4"
-                        create_comparison_video(processed_original, replay_images, comparison_video_path)
 
-                logging.info(f"任务状态: {'成功' if success else '未完成'}")
-                reconstructor.save_frames_as_json(args.video_out_path, episode_idx,env)
-                
-                summary = reconstructor.get_summary()
-                print(f"重建摘要: {summary}")
-            else:
-                logging.warning("没有重放图像帧可保存")
-
-        except Exception as e:
-            logging.error(f"处理episode {episode_file.name} 时出错: {e}")
-            import traceback
-            traceback.print_exc()
-            continue
 
     logging.info(f"\n=== 回放完成！所有视频已保存到: {args.video_out_path} ===")
 

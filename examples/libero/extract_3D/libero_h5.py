@@ -52,8 +52,8 @@ class SaveLerobotDataset(PipelineStep):
         dataset = LeRobotDataset.create(
             repo_id=f"{input_h5.parent.name}/{input_h5.name}",
             root=output_path,
-            fps=20,
-            robot_type="franka",
+            fps=10,
+            robot_type="panda",
             features=LIBERO_FEATURES,
         )
 
@@ -180,34 +180,28 @@ class AggregateDatasets(PipelineStep):
             write_task(task_index, task, aggr_meta.root)
 
         write_info(aggr_meta.info, aggr_meta.root)
-        # 保存点云映射
-        pointcloud_mapping = {
-            'datasets': [],
-            'episode_mapping': {}
-        }
+        # 🔥 生成 voxel 映射 (episode_id -> voxel_file)
+        logger.info("Creating voxel mapping")
+        voxel_mapping = {}
+
         for dataset_index, meta in enumerate(all_metadata):
-            dataset_name = self.raw_dirs[dataset_index].name
-            pointcloud_mapping['datasets'].append(dataset_name)
+            # 从临时数据集目录名提取原始 task.name
+            # 目录名格式: "{task.name}_demo"
+            raw_dir = self.raw_dirs[dataset_index]
+            task_name = raw_dir.name.rsplit("_demo", 1)[0]  # 去掉后缀 "_demo"
 
             for episode_index in range(meta.total_episodes):
-                aggr_episode_index = episode_index + self.datasets_aggr_episode_index_shift[dataset_index]
-                task_index = meta.episodes[episode_index]['tasks'][0]
-                task_name = meta.tasks[task_index]
+                aggr_episode_index = episode_index + datasets_aggr_episode_index_shift[dataset_index]
 
-                pointcloud_mapping['episode_mapping'][str(aggr_episode_index)] = {
-                    'source_dataset': dataset_name,
-                    'source_episode': episode_index,
-                    'task': task_name,
-                    'pointcloud_files': {
-                        'meta': f"pointclouds/pointmeta_{task_name.replace(' ', '_')}_demo_{episode_index}.json",
-                        'frames': f"pointclouds/pointframes_{task_name.replace(' ', '_')}_demo_{episode_index}.json"
-                    }
-                }
+                # voxel 文件名: voxel_ep_{task.name}_demo_{episode_index}.json
+                voxel_filename = f"voxel_ep_{task_name}_demo_{episode_index}.json"
 
-        pointcloud_mapping_path = aggr_meta.root / "pointcloud_mapping.json"
-        with open(pointcloud_mapping_path, 'w') as f:
-            json.dump(pointcloud_mapping, f, indent=2)
-        logger.info(f"Saved pointcloud mapping to {pointcloud_mapping_path}")
+                voxel_mapping[str(aggr_episode_index)] = voxel_filename
+
+        voxel_mapping_path = aggr_meta.root / "voxel_mapping.json"
+        with open(voxel_mapping_path, 'w') as f:
+            json.dump(voxel_mapping, f, indent=2)
+        logger.info(f"Saved voxel mapping to {voxel_mapping_path}")
 
         self.datasets_task_index_to_aggr_task_index = datasets_task_index_to_aggr_task_index
         self.datasets_aggr_episode_index_shift = datasets_aggr_episode_index_shift

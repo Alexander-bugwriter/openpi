@@ -34,9 +34,9 @@ import numpy as np
 import robosuite.utils.transform_utils as T
 import tqdm
 from libero.libero import benchmark, get_libero_path
-from libero.libero.envs import OffScreenRenderEnv
-from pointmap_reconstructor import PointMapReconstructor
-
+from libero.libero.envs import OffScreenRenderEnv,SegmentationRenderEnv
+# from pointmap_reconstructor import PointMapReconstructor
+from voxel_reconstructor import VoxelReconstructor
 
 def get_libero_dummy_action(model_family: str):
     """Get dummy/no-op action, used to roll out the simulation while the robot does nothing."""
@@ -58,7 +58,8 @@ def get_libero_env(task, model_family, resolution=256):
         "camera_segmentations": "instance",  # 🔥 新增：启用instance分割
 
     }
-    env = OffScreenRenderEnv(**env_args)
+    # env = OffScreenRenderEnv(**env_args)
+    env = SegmentationRenderEnv(**env_args)
     env.seed(0)  # IMPORTANT: seed seems to affect object positions even when using fixed initial state
     return env, task_description
 
@@ -122,12 +123,16 @@ def main(args):
         'y': (-0.8, 0.8),
         'z': (0.35, 1.5)
     }
-    reconstructor = PointMapReconstructor(max_points=30000, spatial_bounds=None)
+    # reconstructor = PointMapReconstructor(max_points=30000, spatial_bounds=None)
+    reconstructor = VoxelReconstructor(
+        voxel_grid_size=(64, 64, 64),  # 可以调整分辨率
+        spatial_bounds=spatial_bounds,  # 必须指定，用于计算体素大小
+        min_points_per_voxel=1  # 最小点数阈值（可调整）
+    )
 
     for task_id in tqdm.tqdm(range(num_tasks_in_suite)):
         # Get task in suite
         task = task_suite.get_task(task_id)
-        reconstructor.reset()
         env, task_description = get_libero_env(task, "llava", resolution=args.resolution)
 
         # Get dataset for task
@@ -149,6 +154,7 @@ def main(args):
 
             # Reset environment, set initial state, and wait a few steps for environment to settle
             env.reset()
+            reconstructor.reset()
             env.set_init_state(orig_states[0])
             for _ in range(10):
                 obs, reward, done, info = env.step(get_libero_dummy_action("llava"))
@@ -204,7 +210,7 @@ def main(args):
 
                 # Execute demo action in environment
                 obs, reward, done, info = env.step(action.tolist())
-                reconstructor.capture_frame(obs, env, float(_), int(_))
+                reconstructor.capture_frame(obs, env)
 
             # At end of episode, save replayed trajectories to new HDF5 files (only keep successes)
             if done:
@@ -230,9 +236,12 @@ def main(args):
                 ep_data_grp.create_dataset("dones", data=dones)
 
                 num_success += 1
-                pointcloud_dir = os.path.join(args.libero_target_dir, "pointclouds")
-                os.makedirs(pointcloud_dir, exist_ok=True)
-                reconstructor.save_frames_as_json(pointcloud_dir, f"{task.name}_demo_{i}")
+                # pointcloud_dir = os.path.join(args.libero_target_dir, "pointclouds")
+                # os.makedirs(pointcloud_dir, exist_ok=True)
+                # reconstructor.save_frames_as_json(pointcloud_dir, f"{task.name}_demo_{i}")
+                voxel_dir = os.path.join(args.libero_target_dir, "voxels")
+                os.makedirs(voxel_dir, exist_ok=True)
+                reconstructor.save_frames_as_json(voxel_dir, f"{task.name}_demo_{i}")
 
             num_replays += 1
 
