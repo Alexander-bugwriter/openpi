@@ -959,6 +959,111 @@ _CONFIGS = [
     #
     # RoboArena configs.
     #
+    TrainConfig(
+        name="pi0_lyh_libero_lora",
+        # LoRA 配置 - 只训练少量参数
+        model=pi0_config.Pi0Config(
+            paligemma_variant="gemma_2b_lora",  # 使用 LoRA 版本
+            action_expert_variant="gemma_300m_lora",  # Action expert 也用 LoRA
+        ),
+        # 数据配置
+        data=LeRobotLiberoDataConfig(
+            repo_id="/opt/liblibai-models/user-workspace2/dataset/lyh_libero_3D_backup",
+            #local_files_only=True,  # 使用本地数据集
+            base_config=DataConfig(
+                prompt_from_task=True,  # 从数据集的 task 字段加载任务描述
+            ),
+            extra_delta_transform=True,  # LIBERO 需要的额外变换
+        ),
+        # 加载转换后的 PyTorch base 模型
+        weight_loader=weight_loaders.CheckpointWeightLoader(
+            "/opt/liblibai-models/user-workspace2/users/lyh/model_checkpoint/pi0/pytorch/pi0_base_lora"
+        ),
+        # 训练超参数
+        num_train_steps=30_000,
+        batch_size=32,  # 根据你的显存调整
+        pytorch_training_precision="bfloat16",  # 或 "float32" 如果遇到数值问题
+    
+        # LoRA 特定设置：冻结非 LoRA 参数
+        freeze_filter=pi0_config.Pi0Config(
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+    
+        # 关闭 EMA（LoRA 微调不需要）
+        ema_decay=None,
+    
+    # 可选：启用梯度检查点以节省更多显存
+    # gradient_checkpointing=True,
+    ),
+    TrainConfig(
+        name="pi0_lyh_libero_lora_official",
+        # LoRA 配置 - 只训练少量参数
+        model=pi0_config.Pi0Config(
+            paligemma_variant="gemma_2b_lora",  # 使用 LoRA 版本
+            action_expert_variant="gemma_300m_lora",  # Action expert 也用 LoRA
+        ),
+        # 数据配置
+        data=LeRobotLiberoDataConfig(
+            repo_id="/opt/liblibai-models/user-workspace2/dataset/libero_dataset",
+            #local_files_only=True,  # 使用本地数据集
+            base_config=DataConfig(
+                prompt_from_task=True,  # 从数据集的 task 字段加载任务描述
+            ),
+            extra_delta_transform=True,  # LIBERO 需要的额外变换
+        ),
+        # 加载转换后的 PyTorch base 模型
+        weight_loader=weight_loaders.CheckpointWeightLoader(
+            "/opt/liblibai-models/user-workspace2/users/lyh/model_checkpoint/pi0/pytorch/pi0_base_lora"
+        ),
+        # 训练超参数
+        num_train_steps=50_000,
+        batch_size=32,  # 根据你的显存调整
+        pytorch_training_precision="bfloat16",  # 或 "float32" 如果遇到数值问题
+
+        # LoRA 特定设置：冻结非 LoRA 参数
+        freeze_filter=pi0_config.Pi0Config(
+            paligemma_variant="gemma_2b_lora",
+            action_expert_variant="gemma_300m_lora",
+        ).get_freeze_filter(),
+
+        # 关闭 EMA（LoRA 微调不需要）
+        ema_decay=None,
+
+    # 可选：启用梯度检查点以节省更多显存
+    # gradient_checkpointing=True,
+    ),
+    TrainConfig(
+        name="pi0_lyh_libero_lora_official_full",
+        # LoRA 配置 - 只训练少量参数
+        model=pi0_config.Pi0Config(),
+        # 数据配置
+        data=LeRobotLiberoDataConfig(
+            repo_id="/opt/liblibai-models/user-workspace2/dataset/libero_dataset",
+            #local_files_only=True,  # 使用本地数据集
+            base_config=DataConfig(
+                prompt_from_task=True,  # 从数据集的 task 字段加载任务描述
+            ),
+            extra_delta_transform=True,  # LIBERO 需要的额外变换
+        ),
+        # 加载转换后的 PyTorch base 模型
+        weight_loader=weight_loaders.CheckpointWeightLoader(
+            "/opt/liblibai-models/user-workspace2/users/lyh/model_checkpoint/pi0/pytorch/pi0_base_lora"
+        ),
+        # 训练超参数
+        num_train_steps=50_000,
+        batch_size=32,  # 根据你的显存调整
+        pytorch_training_precision="bfloat16",  # 或 "float32" 如果遇到数值问题
+
+        # LoRA 特定设置：冻结非 LoRA 参数
+        #freeze_filter=pi0_config.Pi0Config().get_freeze_filter(),
+        # 关闭 EMA（LoRA 微调不需要）
+        ema_decay=None,
+    # 可选：启用梯度检查点以节省更多显存
+    # gradient_checkpointing=True,
+    ),
+    
+
     *roboarena_config.get_roboarena_configs(),
 ]
 
