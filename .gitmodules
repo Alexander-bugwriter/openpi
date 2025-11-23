@@ -1,6 +1,3 @@
-[submodule "third_party/aloha"]
-	path = third_party/aloha
-	url = https://github.com/Physical-Intelligence/aloha.git
-[submodule "third_party/libero"]
-	path = third_party/libero
-	url = https://github.com/Lifelong-Robot-Learning/LIBERO.git
+[submodule "src/openpi/models_pytorch/cut3r"]
+path = src/openpi/models_pytorch/CUT3R
+url = https://github.com/Alexander-bugwriter/CUT3R.git
